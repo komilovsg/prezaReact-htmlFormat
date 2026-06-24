@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Урок 1 — Почему React + Vite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0D1117;
+    --surface:   #161B22;
+    --border:    #30363D;
+    --react:     #61DAFB;
+    --react-dim: rgba(97,218,251,.12);
+    --green:     #3FB950;
+    --yellow:    #E3B341;
+    --purple:    #BC8CFF;
+    --red:       #FF7B72;
+    --text:      #E6EDF3;
+    --muted:     #8B949E;
+    --radius:    10px;
+  }
+
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); }
+
+  /* ───── SLIDES WRAPPER ───── */
+  #deck {
+    width: 100vw; height: 100vh;
+    position: relative;
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+  }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 60px 80px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .4s ease;
+  }
+  .slide.active { opacity: 1; pointer-events: all; }
+
+  /* ───── PROGRESS BAR ───── */
+  #progress-bar {
+    position: fixed; top: 0; left: 0; height: 3px;
+    background: var(--react);
+    transition: width .4s ease;
+    z-index: 100;
+    box-shadow: 0 0 12px var(--react);
+  }
+
+  /* ───── SLIDE NUMBER ───── */
+  #slide-counter {
+    position: fixed; bottom: 28px; right: 40px;
+    font-size: 13px; color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    z-index: 100;
+  }
+
+  /* ───── NAV ARROWS ───── */
+  .nav-btn {
+    position: fixed; top: 50%; transform: translateY(-50%);
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--muted); width: 44px; height: 44px;
+    border-radius: 50%; cursor: pointer; font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s; z-index: 100;
+  }
+  .nav-btn:hover { border-color: var(--react); color: var(--react); }
+  #btn-prev { left: 24px; }
+  #btn-next { right: 24px; }
+
+  /* ───── EYEBROW ───── */
+  .eyebrow {
+    font-size: 12px; font-weight: 600; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--react);
+    margin-bottom: 16px;
+  }
+
+  /* ───── HEADINGS ───── */
+  h1 { font-size: clamp(2.4rem, 5vw, 4rem); font-weight: 800; line-height: 1.1; }
+  h2 { font-size: clamp(1.6rem, 3.5vw, 2.6rem); font-weight: 700; line-height: 1.2; }
+  h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
+
+  .accent { color: var(--react); }
+  .muted  { color: var(--muted); }
+
+  /* ───── CODE BLOCK ───── */
+  .code-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(.8rem, 1.3vw, .95rem);
+    line-height: 1.7;
+    width: 100%; max-width: 680px;
+    position: relative;
+    overflow: hidden;
+  }
+  .code-block::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--react), var(--purple));
+  }
+  .kw  { color: var(--purple); }
+  .fn  { color: var(--react); }
+  .str { color: var(--green); }
+  .cm  { color: var(--muted); font-style: italic; }
+  .tag { color: var(--red); }
+  .attr{ color: var(--yellow); }
+  .val { color: var(--green); }
+
+  /* ───── PILL / BADGE ───── */
+  .pill {
+    display: inline-block;
+    padding: 4px 14px; border-radius: 20px;
+    font-size: .78rem; font-weight: 600;
+    background: var(--react-dim);
+    color: var(--react); border: 1px solid rgba(97,218,251,.25);
+  }
+
+  /* ───── CARD GRID ───── */
+  .card-grid {
+    display: grid; gap: 16px;
+    width: 100%; max-width: 820px;
+  }
+  .card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .card-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    transition: border-color .2s;
+  }
+  .card:hover { border-color: var(--react); }
+  .card-icon { font-size: 1.6rem; margin-bottom: 10px; }
+
+  /* ───── LIST ───── */
+  .check-list { list-style: none; max-width: 640px; width: 100%; }
+  .check-list li {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    font-size: clamp(.9rem, 1.5vw, 1.05rem);
+  }
+  .check-list li:last-child { border-bottom: none; }
+  .check-list .icon { font-size: 1.1rem; margin-top: 1px; flex-shrink: 0; }
+
+  /* ───── ATOM ANIMATION ───── */
+  #atom-wrap {
+    width: 200px; height: 200px;
+    position: relative; flex-shrink: 0;
+  }
+  #atom-wrap svg { width: 100%; height: 100%; }
+  .orbit { transform-origin: 50% 50%; }
+  .orbit1 { animation: spin1 3s linear infinite; }
+  .orbit2 { animation: spin2 3.6s linear infinite; }
+  .orbit3 { animation: spin3 4.2s linear infinite; }
+  @keyframes spin1 { to { transform: rotate(360deg); } }
+  @keyframes spin2 { to { transform: rotate(-360deg); } }
+  @keyframes spin3 { to { transform: rotate(360deg); } }
+
+  /* ───── TERMINAL ───── */
+  .terminal {
+    background: #010409;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: 100%; max-width: 600px;
+    overflow: hidden;
+  }
+  .terminal-bar {
+    background: var(--surface);
+    padding: 10px 16px;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot-r { background: #FF5F57; }
+  .dot-y { background: #FEBC2E; }
+  .dot-g { background: #28C840; }
+  .terminal-title { font-size: 12px; color: var(--muted); margin-left: auto; font-family: 'JetBrains Mono', monospace; }
+  .terminal-body {
+    padding: 20px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(.78rem, 1.2vw, .88rem);
+    line-height: 1.9;
+  }
+  .prompt { color: var(--green); }
+  .cmd    { color: var(--text); }
+  .out    { color: var(--muted); }
+  .out-g  { color: var(--green); }
+
+  /* ───── TWO-COL LAYOUT ───── */
+  .two-col {
+    display: flex; gap: 60px;
+    align-items: flex-start;
+    width: 100%; max-width: 960px;
+  }
+  .col { flex: 1; }
+
+  /* ───── FILE TREE ───── */
+  .file-tree {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(.78rem, 1.2vw, .88rem);
+    line-height: 2;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    max-width: 340px;
+    width: 100%;
+  }
+  .tree-dir  { color: var(--react); }
+  .tree-file { color: var(--text); }
+  .tree-hl   { background: rgba(97,218,251,.15); border-radius: 4px; padding: 0 6px; }
+
+  /* ───── COMPARE TABLE ───── */
+  .compare {
+    width: 100%; max-width: 720px;
+    border-collapse: collapse;
+    font-size: clamp(.82rem, 1.3vw, .95rem);
+  }
+  .compare th {
+    padding: 12px 20px; text-align: left;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted); font-weight: 600;
+    font-size: .78rem; letter-spacing: .06em; text-transform: uppercase;
+  }
+  .compare td {
+    padding: 12px 20px;
+    border: 1px solid var(--border);
+  }
+  .compare tr:hover td { background: rgba(255,255,255,.02); }
+  .yes { color: var(--green); }
+  .no  { color: var(--red); }
+
+  /* ───── JSX DEMO ───── */
+  .split-demo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    width: 100%; max-width: 820px;
+  }
+  .demo-label {
+    font-size: .72rem; font-weight: 600; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  /* ───── SLIDE SPECIFIC STYLES ───── */
+
+  /* S1 — hero */
+  #s1 { gap: 32px; }
+  .hero-text { text-align: center; }
+  .hero-text h1 { margin-bottom: 12px; }
+  .hero-meta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+
+  /* S2 — problem */
+  #s2 .big-q { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; text-align: center; max-width: 700px; line-height: 1.4; }
+
+  /* S6 — practice */
+  .practice-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    max-width: 560px; width: 100%;
+    display: flex; align-items: center; gap: 24px;
+  }
+  .practice-icon { font-size: 3rem; flex-shrink: 0; }
+  .practice-card h3 { font-size: 1.2rem; margin-bottom: 6px; }
+  .practice-card p { color: var(--muted); font-size: .92rem; line-height: 1.6; }
+
+  /* homework card */
+  .hw-card {
+    background: linear-gradient(135deg, rgba(97,218,251,.08), rgba(188,140,255,.08));
+    border: 1px solid rgba(97,218,251,.2);
+    border-radius: var(--radius);
+    padding: 32px 40px;
+    max-width: 560px; width: 100%;
+    text-align: center;
+  }
+  .hw-card h3 { font-size: 1.3rem; margin-bottom: 10px; }
+  .hw-card p  { color: var(--muted); font-size: .95rem; line-height: 1.6; }
+
+  /* SLIDE 10 — summary */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    max-width: 700px; width: 100%;
+  }
+  .sum-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    display: flex; align-items: center; gap: 12px;
+    font-size: .92rem;
+  }
+  .sum-item .tick { color: var(--green); font-size: 1rem; flex-shrink: 0; }
+
+  @media (max-width: 700px) {
+    .slide { padding: 40px 24px; }
+    .card-grid.cols-3 { grid-template-columns: 1fr; }
+    .two-col { flex-direction: column; gap: 24px; }
+    .split-demo { grid-template-columns: 1fr; }
+    .summary-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+<span id="slide-counter"></span>
+<button class="nav-btn" id="btn-prev" aria-label="Назад">&#8592;</button>
+<button class="nav-btn" id="btn-next" aria-label="Вперёд">&#8594;</button>
+
+<div id="deck">
+
+  <!-- ══════════════════ SLIDE 1 — HERO ══════════════════ -->
+  <section class="slide active" id="s1">
+    <div id="atom-wrap">
+      <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <!-- nucleus -->
+        <circle cx="100" cy="100" r="10" fill="#61DAFB"/>
+        <!-- orbit 1 -->
+        <g class="orbit orbit1">
+          <ellipse cx="100" cy="100" rx="80" ry="28" fill="none" stroke="#61DAFB" stroke-width="1.5" stroke-opacity=".5"/>
+          <circle cx="180" cy="100" r="6" fill="#61DAFB"/>
+        </g>
+        <!-- orbit 2 -->
+        <g class="orbit orbit2" style="transform: rotate(60deg); transform-origin: 100px 100px;">
+          <ellipse cx="100" cy="100" rx="80" ry="28" fill="none" stroke="#61DAFB" stroke-width="1.5" stroke-opacity=".4"/>
+          <circle cx="180" cy="100" r="6" fill="#61DAFB"/>
+        </g>
+        <!-- orbit 3 -->
+        <g class="orbit orbit3" style="transform: rotate(120deg); transform-origin: 100px 100px;">
+          <ellipse cx="100" cy="100" rx="80" ry="28" fill="none" stroke="#61DAFB" stroke-width="1.5" stroke-opacity=".3"/>
+          <circle cx="180" cy="100" r="6" fill="#61DAFB"/>
+        </g>
+      </svg>
+    </div>
+    <div class="hero-text">
+      <div class="eyebrow">Неделя 1 · Урок 1</div>
+      <h1>Почему <span class="accent">React</span> + Vite</h1>
+      <p style="color:var(--muted); margin-top:14px; font-size:1.05rem; max-width:480px; margin-inline:auto; line-height:1.6;">
+        Первый шаг в современный фронтенд — без лишней теории, сразу к делу
+      </p>
+      <div class="hero-meta">
+        <span class="pill">React 19</span>
+        <span class="pill">Vite 6</span>
+        <span class="pill">JSX</span>
+        <span class="pill">60 мин</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ SLIDE 2 — ПРОБЛЕМА ══════════════════ -->
+  <section class="slide" id="s2">
+    <div class="eyebrow">Зачем нам React?</div>
+    <p class="big-q" style="margin-bottom:40px;">
+      Что не так с обычным<br/><span class="accent">HTML + JS</span>?
+    </p>
+    <div class="card-grid cols-3" style="max-width:780px;">
+      <div class="card">
+        <div class="card-icon">😩</div>
+        <h3>DOM вручную</h3>
+        <p style="color:var(--muted); font-size:.88rem; line-height:1.6;">
+          <code style="color:var(--yellow); font-family:'JetBrains Mono',monospace;">getElementById</code>, <code style="color:var(--yellow); font-family:'JetBrains Mono',monospace;">innerHTML</code> — код превращается в спагетти
+        </p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔁</div>
+        <h3>Повторения</h3>
+        <p style="color:var(--muted); font-size:.88rem; line-height:1.6;">
+          Одна карточка товара — копируем HTML 50 раз. Изменилось — меняем 50 раз
+        </p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🐛</div>
+        <h3>Синхронизация</h3>
+        <p style="color:var(--muted); font-size:.88rem; line-height:1.6;">
+          Данные изменились — UI нужно обновить вручную. Забыл — баг
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ SLIDE 3 — ЧТО ТАКОЕ REACT ══════════════════ -->
+  <section class="slide" id="s3">
+    <div class="eyebrow">Что такое React</div>
+    <h2 style="margin-bottom:32px;">React — это <span class="accent">библиотека для UI</span></h2>
+    <div class="two-col">
+      <div class="col">
+        <ul class="check-list">
+          <li><span class="icon">⚛️</span><span>Создана в <strong>Facebook</strong> в 2013 году</span></li>
+          <li><span class="icon">🧩</span><span>Интерфейс = дерево <strong>компонентов</strong></span></li>
+          <li><span class="icon">🔄</span><span><strong>UI = f(state)</strong> — меняется стейт, UI обновляется сам</span></li>
+          <li><span class="icon">💼</span><span>Используется в <strong>Airbnb, Netflix, Yora</strong> и тысячах компаний</span></li>
+          <li><span class="icon">📦</span><span>Самая популярная JS-библиотека в мире (<strong>npm: 50M загрузок/нед</strong>)</span></li>
+        </ul>
+      </div>
+      <div class="col" style="display:flex; flex-direction:column; gap:12px; align-items:flex-start;">
+        <p style="color:var(--muted); font-size:.9rem; margin-bottom:4px;">Главная идея:</p>
+        <div class="code-block">
+<span class="cm">// Вместо этого:</span>
+document.<span class="fn">getElementById</span>(<span class="str">'btn'</span>)
+  .innerHTML = <span class="str">'Привет'</span>
+
+<span class="cm">// Ты пишешь это:</span>
+<span class="kw">function</span> <span class="fn">Button</span>() {
+  <span class="kw">return</span> &lt;<span class="tag">button</span>&gt;Привет&lt;/<span class="tag">button</span>&gt;
+}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ SLIDE 4 — VITE ══════════════════ -->
+  <section class="slide" id="s4">
+    <div class="eyebrow">Наш инструмент</div>
+    <h2 style="margin-bottom:8px;">Почему <span class="accent">Vite</span>, а не CRA?</h2>
+    <p style="color:var(--muted); margin-bottom:32px; font-size:.95rem;">Create React App устарел. Vite — это стандарт 2024+</p>
+    <table class="compare">
+      <thead>
+        <tr>
+          <th>Критерий</th>
+          <th>Create React App</th>
+          <th style="color:var(--react);">Vite</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Скорость запуска</td>
+          <td class="no">30–60 сек ☹️</td>
+          <td class="yes">~300 мс ⚡</td>
+        </tr>
+        <tr>
+          <td>Hot Reload</td>
+          <td class="no">Медленный</td>
+          <td class="yes">Мгновенный</td>
+        </tr>
+        <tr>
+          <td>Поддержка</td>
+          <td class="no">Устарел</td>
+          <td class="yes">Активно развивается</td>
+        </tr>
+        <tr>
+          <td>Используется в</td>
+          <td style="color:var(--muted);">Legacy проекты</td>
+          <td class="yes">Vue, Svelte, React</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ══════════════════ SLIDE 5 — СОЗДАНИЕ ПРОЕКТА ══════════════════ -->
+  <section class="slide" id="s5">
+    <div class="eyebrow">Практика — шаг 1</div>
+    <h2 style="margin-bottom:28px;">Создаём проект</h2>
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+        <span class="terminal-title">terminal</span>
+      </div>
+      <div class="terminal-body">
+        <div><span class="prompt">$</span> <span class="cmd">npm create vite@latest my-app -- --template react</span></div>
+        <div class="out">✔ Select a framework: <span style="color:var(--react);">React</span></div>
+        <div class="out">✔ Select a variant: <span style="color:var(--react);">JavaScript</span></div>
+        <div>&nbsp;</div>
+        <div><span class="prompt">$</span> <span class="cmd">cd my-app</span></div>
+        <div><span class="prompt">$</span> <span class="cmd">npm install</span></div>
+        <div><span class="prompt">$</span> <span class="cmd">npm run dev</span></div>
+        <div>&nbsp;</div>
+        <div class="out-g">  ➜  Local:   http://localhost:5173/</div>
+        <div class="out-g">  ➜  ready in 312ms ⚡</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ SLIDE 6 — СТРУКТУРА ══════════════════ -->
+  <section class="slide" id="s6">
+    <div class="eyebrow">Что создалось</div>
+    <h2 style="margin-bottom:28px;">Структура проекта</h2>
+    <div class="two-col">
+      <div class="col">
+        <div class="file-tree">
+<span class="tree-dir">my-app/</span>
+├── <span class="tree-dir">node_modules/</span>
+├── <span class="tree-dir">public/</span>
+│   └── <span class="tree-file">vite.svg</span>
+├── <span class="tree-dir">src/</span>
+│   ├── <span class="tree-file tree-hl">App.jsx</span>       ← главный компонент
+│   ├── <span class="tree-file tree-hl">main.jsx</span>      ← точка входа
+│   └── <span class="tree-file">App.css</span>
+├── <span class="tree-file">index.html</span>
+├── <span class="tree-file">package.json</span>
+└── <span class="tree-file">vite.config.js</span>
+        </div>
+      </div>
+      <div class="col">
+        <ul class="check-list">
+          <li><span class="icon" style="color:var(--react);">📄</span>
+            <span><strong>main.jsx</strong> — монтирует React в <code style="font-family:'JetBrains Mono',monospace; color:var(--yellow);">#root</code> в index.html</span>
+          </li>
+          <li><span class="icon" style="color:var(--react);">⚛️</span>
+            <span><strong>App.jsx</strong> — первый компонент. Отсюда растёт дерево</span>
+          </li>
+          <li><span class="icon" style="color:var(--muted);">📦</span>
+            <span><strong>node_modules</strong> — зависимости. Не трогаем, не коммитим</span>
+          </li>
+          <li><span class="icon" style="color:var(--green);">⚙️</span>
+            <span><strong>vite.config.js</strong> — конфиг сборщика. Пока не важен</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ SLIDE 7 — JSX ══════════════════ -->
+  <section class="slide" id="s7">
+    <div class="eyebrow">Главная магия React</div>
+    <h2 style="margin-bottom:24px;"><span class="accent">JSX</span> — HTML внутри JavaScript</h2>
+    <div class="split-demo">
+      <div>
+        <p class="demo-label">❌ Без JSX (больно)</p>
+        <div class="code-block" style="max-width:100%;">
+<span class="fn">React</span>.<span class="fn">createElement</span>(
+  <span class="str">'div'</span>,
+  { className: <span class="str">'card'</span> },
+  <span class="fn">React</span>.<span class="fn">createElement</span>(
+    <span class="str">'h1'</span>, <span class="kw">null</span>, <span class="str">'Привет'</span>
+  )
+)
+        </div>
+      </div>
+      <div>
+        <p class="demo-label">✅ С JSX (красиво)</p>
+        <div class="code-block" style="max-width:100%;">
+<span class="kw">function</span> <span class="fn">Card</span>() {
+  <span class="kw">return</span> (
+    &lt;<span class="tag">div</span> <span class="attr">className</span>=<span class="val">"card"</span>&gt;
+      &lt;<span class="tag">h1</span>&gt;Привет&lt;/<span class="tag">h1</span>&gt;
+    &lt;/<span class="tag">div</span>&gt;
+  )
+}
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:20px; display:flex; gap:20px; flex-wrap:wrap; justify-content:center;">
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 20px; font-size:.88rem;">
+        <span class="muted">Правило 1:</span> <code style="font-family:'JetBrains Mono',monospace; color:var(--yellow);">class</code> → <code style="font-family:'JetBrains Mono',monospace; color:var(--react);">className</code>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 20px; font-size:.88rem;">
+        <span class="muted">Правило 2:</span> один корневой тег или <code style="font-family:'JetBrains Mono',monospace; color:var(--react);">&lt;&gt;…&lt;/&gt;</code>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 20px; font-size:.88rem;">
+        <span class="muted">Правило 3:</span> JS в JSX заворачивается в <code style="font-family:'JetBrains Mono',monospace; color:var(--react);">{ }</code>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ SLIDE 8 — ПЕРВЫЙ КОМПОНЕНТ ══════════════════ -->
+  <section class="slide" id="s8">
+    <div class="eyebrow">Пишем живой код</div>
+    <h2 style="margin-bottom:24px;">Первый <span class="accent">компонент</span></h2>
+    <div class="two-col" style="align-items:center;">
+      <div class="col">
+        <div class="code-block">
+<span class="cm">// src/App.jsx</span>
+
+<span class="kw">function</span> <span class="fn">App</span>() {
+  <span class="kw">const</span> name = <span class="str">"Шахрон"</span>
+  <span class="kw">const</span> role = <span class="str">"Frontend Developer"</span>
+
+  <span class="kw">return</span> (
+    &lt;<span class="tag">div</span> <span class="attr">className</span>=<span class="val">"card"</span>&gt;
+      &lt;<span class="tag">h1</span>&gt;{name}&lt;/<span class="tag">h1</span>&gt;
+      &lt;<span class="tag">p</span>&gt;{role}&lt;/<span class="tag">p</span>&gt;
+    &lt;/<span class="tag">div</span>&gt;
+  )
+}
+
+<span class="kw">export default</span> <span class="fn">App</span>
+        </div>
+      </div>
+      <div class="col">
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:32px; text-align:center; max-width:280px;">
+          <div style="width:72px;height:72px;background:linear-gradient(135deg,#61DAFB33,#BC8CFF33);border-radius:50%;margin:0 auto 16px; display:flex;align-items:center;justify-content:center; font-size:1.8rem;">👤</div>
+          <div style="font-size:1.2rem;font-weight:700;margin-bottom:4px;">Шахрон</div>
+          <div style="color:var(--muted);font-size:.88rem;">Frontend Developer</div>
+        </div>
+        <p style="color:var(--muted); font-size:.82rem; text-align:center; margin-top:10px;">← результат в браузере</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ SLIDE 9 — ПРАКТИКА ══════════════════ -->
+  <section class="slide" id="s9">
+    <div class="eyebrow">Практика урока</div>
+    <h2 style="margin-bottom:32px;">Создаём <span class="accent">визитку студента</span></h2>
+    <div class="practice-card">
+      <div class="practice-icon">🪪</div>
+      <div>
+        <h3>Визитка студента</h3>
+        <p>Напиши компонент, который отображает твоё имя, специальность и любимый язык программирования. Используй JSX и переменные.</p>
+      </div>
+    </div>
+    <div style="margin-top:24px; max-width:560px; width:100%;">
+      <p style="color:var(--muted); font-size:.82rem; margin-bottom:10px; font-weight:600; text-transform:uppercase; letter-spacing:.08em;">Что должно быть:</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <span class="pill">Имя</span>
+        <span class="pill">Специальность</span>
+        <span class="pill">Любимый язык</span>
+        <span class="pill">Аватар / эмодзи</span>
+        <span class="pill">CSS-стили</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ SLIDE 10 — ДОМАШКА ══════════════════ -->
+  <section class="slide" id="s10">
+    <div class="eyebrow">Домашнее задание</div>
+    <h2 style="margin-bottom:28px;"><span class="accent">Страница о себе</span></h2>
+    <div class="hw-card">
+      <div style="font-size:2.4rem; margin-bottom:12px;">📝</div>
+      <h3>Сделай страницу «О себе»</h3>
+      <p>Расширь визитку: добавь секции «Обо мне», «Навыки» (список), «Мои проекты» (хотя бы один). Всё — через React-компоненты.</p>
+    </div>
+    <div style="margin-top:28px; max-width:560px; width:100%; text-align:left;">
+      <p style="color:var(--muted); font-size:.82rem; margin-bottom:12px; font-weight:600; text-transform:uppercase; letter-spacing:.08em;">Бонус (+)</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <span class="pill" style="background:rgba(63,185,80,.12); color:var(--green); border-color:rgba(63,185,80,.25);">Разбить на несколько компонентов</span>
+        <span class="pill" style="background:rgba(63,185,80,.12); color:var(--green); border-color:rgba(63,185,80,.25);">Добавить свои стили</span>
+        <span class="pill" style="background:rgba(63,185,80,.12); color:var(--green); border-color:rgba(63,185,80,.25);">Тёмная / светлая тема</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ SLIDE 11 — ИТОГИ ══════════════════ -->
+  <section class="slide" id="s11">
+    <div class="eyebrow">Итоги урока</div>
+    <h2 style="margin-bottom:28px;">Что ты теперь <span class="accent">знаешь</span></h2>
+    <div class="summary-grid">
+      <div class="sum-item"><span class="tick">✅</span> Что такое React и зачем он нужен</div>
+      <div class="sum-item"><span class="tick">✅</span> Почему мы используем Vite</div>
+      <div class="sum-item"><span class="tick">✅</span> Как создать проект командой npm create vite</div>
+      <div class="sum-item"><span class="tick">✅</span> Структура папок React-проекта</div>
+      <div class="sum-item"><span class="tick">✅</span> Что такое JSX и его 3 правила</div>
+      <div class="sum-item"><span class="tick">✅</span> Написал первый компонент App</div>
+    </div>
+    <p style="color:var(--muted); margin-top:28px; font-size:.92rem; text-align:center;">
+      Следующий урок → <strong style="color:var(--text);">Компоненты и Props</strong>
+    </p>
+  </section>
+
+</div><!-- /deck -->
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let current = 0;
+
+  const bar     = document.getElementById('progress-bar');
+  const counter = document.getElementById('slide-counter');
+  const btnPrev = document.getElementById('btn-prev');
+  const btnNext = document.getElementById('btn-next');
+
+  function go(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(total - 1, n));
+    slides[current].classList.add('active');
+    bar.style.width = ((current + 1) / total * 100) + '%';
+    counter.textContent = (current + 1) + ' / ' + total;
+    btnPrev.style.opacity = current === 0 ? '.3' : '1';
+    btnNext.style.opacity = current === total - 1 ? '.3' : '1';
+  }
+
+  btnPrev.addEventListener('click', () => go(current - 1));
+  btnNext.addEventListener('click', () => go(current + 1));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') go(current + 1);
+    if (e.key === 'ArrowLeft') go(current - 1);
+  });
+
+  // touch swipe
+  let tx = 0;
+  document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; });
+  document.addEventListener('touchend',   e => {
+    const dx = e.changedTouches[0].clientX - tx;
+    if (dx < -50) go(current + 1);
+    if (dx > 50)  go(current - 1);
+  });
+
+  go(0);
+</script>
+</body>
+</html>
