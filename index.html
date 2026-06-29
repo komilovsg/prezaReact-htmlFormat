@@ -314,9 +314,64 @@
     .split-demo { grid-template-columns: 1fr; }
     .summary-grid { grid-template-columns: 1fr; }
   }
+
+  /* ───── LESSON NAV ───── */
+  #lesson-nav {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    z-index: 200;
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 6px 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.4);
+  }
+  .ln-label {
+    font-size: 11px; font-weight: 600; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted);
+    padding: 0 8px;
+  }
+  .ln-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 14px; border-radius: 16px;
+    font-size: 12px; font-weight: 600;
+    text-decoration: none; cursor: pointer;
+    border: 1px solid transparent;
+    transition: all .2s;
+    font-family: 'Inter', sans-serif;
+    white-space: nowrap;
+  }
+  .ln-btn.current {
+    background: var(--react-dim);
+    color: var(--react);
+    border-color: rgba(97,218,251,.3);
+    pointer-events: none;
+  }
+  .ln-btn.next {
+    color: var(--muted);
+    background: transparent;
+    border-color: var(--border);
+  }
+  .ln-btn.next:hover {
+    color: var(--text);
+    border-color: rgba(97,218,251,.4);
+    background: rgba(97,218,251,.05);
+  }
+  .ln-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--border); flex-shrink: 0;
+  }
 </style>
 </head>
 <body>
+
+<nav id="lesson-nav" aria-label="Навигация по урокам">
+  <span class="ln-label">Курс</span>
+  <div class="ln-dot"></div>
+  <span class="ln-btn current">⚛️ Урок 1 — React + Vite</span>
+  <div class="ln-dot"></div>
+  <a class="ln-btn next" href="./lesson2-components-props.html">Урок 2 — Компоненты →</a>
+</nav>
 
 <div id="progress-bar"></div>
 <span id="slide-counter"></span>

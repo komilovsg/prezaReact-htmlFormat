@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Урок 2 — Компоненты и Props</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0D1117;--surface:#161B22;--border:#30363D;
+  --react:#61DAFB;--react-dim:rgba(97,218,251,.1);
+  --green:#3FB950;--yellow:#E3B341;--purple:#BC8CFF;
+  --red:#FF7B72;--orange:#FFA657;
+  --text:#E6EDF3;--muted:#8B949E;--radius:10px;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Inter',sans-serif;color:var(--text)}
+
+/* ── DECK ── */
+#deck{width:100vw;height:100vh;position:relative}
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:56px 80px;
+  opacity:0;pointer-events:none;
+  transition:opacity .35s ease;
+}
+.slide.active{opacity:1;pointer-events:all}
+
+/* ── CHROME ── */
+#pbar{position:fixed;top:0;left:0;height:3px;background:var(--react);transition:width .4s ease;z-index:100;box-shadow:0 0 10px var(--react)}
+#counter{position:fixed;bottom:26px;right:38px;font-size:13px;color:var(--muted);font-family:'JetBrains Mono',monospace;z-index:100}
+.nav{position:fixed;top:50%;transform:translateY(-50%);background:var(--surface);border:1px solid var(--border);color:var(--muted);width:42px;height:42px;border-radius:50%;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;transition:all .2s;z-index:100}
+.nav:hover{border-color:var(--react);color:var(--react)}
+#prev{left:22px}#next{right:22px}
+
+/* ── TYPE ── */
+.eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--react);margin-bottom:14px}
+h1{font-size:clamp(2.2rem,4.5vw,3.6rem);font-weight:800;line-height:1.1}
+h2{font-size:clamp(1.5rem,3vw,2.4rem);font-weight:700;line-height:1.2}
+.accent{color:var(--react)}
+.muted{color:var(--muted)}
+
+/* ── CODE ── */
+.code{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px 24px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:clamp(.76rem,1.2vw,.9rem);line-height:1.75;
+  position:relative;overflow:hidden;
+}
+.code::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--react),var(--purple))}
+.code-label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.kw{color:var(--purple)}.fn{color:var(--react)}.str{color:var(--green)}.cm{color:var(--muted);font-style:italic}.tag{color:var(--red)}.attr{color:var(--yellow)}.val{color:var(--green)}.op{color:var(--muted)}
+
+/* ── CARDS ── */
+.grid{display:grid;gap:14px;width:100%;max-width:860px}
+.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;transition:border-color .2s}
+.card:hover{border-color:rgba(97,218,251,.4)}
+.card h3{font-size:.95rem;font-weight:600;margin-bottom:6px}
+
+/* ── PILL ── */
+.pill{display:inline-block;padding:3px 12px;border-radius:20px;font-size:.75rem;font-weight:600;background:var(--react-dim);color:var(--react);border:1px solid rgba(97,218,251,.22)}
+.pill-g{background:rgba(63,185,80,.1);color:var(--green);border-color:rgba(63,185,80,.25)}
+
+/* ── LIST ── */
+.clist{list-style:none;max-width:620px;width:100%}
+.clist li{display:flex;align-items:flex-start;gap:11px;padding:9px 0;border-bottom:1px solid var(--border);font-size:clamp(.88rem,1.4vw,1rem)}
+.clist li:last-child{border-bottom:none}
+
+/* ── TWO-COL ── */
+.two{display:flex;gap:48px;align-items:flex-start;width:100%;max-width:960px}
+.col{flex:1}
+
+/* ── TERMINAL ── */
+.term{background:#010409;border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:560px;overflow:hidden}
+.term-bar{background:var(--surface);padding:9px 14px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--border)}
+.dot{width:11px;height:11px;border-radius:50%}
+.dr{background:#FF5F57}.dy{background:#FEBC2E}.dg{background:#28C840}
+.term-title{font-size:11px;color:var(--muted);margin-left:auto;font-family:'JetBrains Mono',monospace}
+.term-body{padding:18px 22px;font-family:'JetBrains Mono',monospace;font-size:clamp(.75rem,1.15vw,.86rem);line-height:1.9}
+.pr{color:var(--green)}.cmd{color:var(--text)}.out{color:var(--muted)}.outg{color:var(--green)}
+
+/* ── FILE TREE ── */
+.tree{font-family:'JetBrains Mono',monospace;font-size:clamp(.75rem,1.15vw,.86rem);line-height:2.1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px}
+.td{color:var(--react)}.tf{color:var(--text)}.thl{background:rgba(97,218,251,.15);border-radius:4px;padding:0 5px}
+
+/* ── SPLIT DEMO ── */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;max-width:840px}
+
+/* ── SUMMARY ── */
+.sumgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;max-width:680px;width:100%}
+.sumitem{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 16px;display:flex;align-items:center;gap:11px;font-size:.9rem}
+.tick{color:var(--green);flex-shrink:0}
+
+/* ── CAR ANALOGY ── */
+.car-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:760px;width:100%}
+.car-part{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center}
+.car-icon{font-size:2rem;margin-bottom:8px}
+.car-part span{font-size:.82rem;color:var(--muted)}
+
+/* ── APP TREE ── */
+.app-tree{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 26px;font-family:'JetBrains Mono',monospace;font-size:clamp(.76rem,1.2vw,.88rem);line-height:1.8;max-width:360px}
+
+/* ── PREVIEW CARD ── */
+.preview-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;width:170px;text-align:left}
+.preview-card .pc-name{font-weight:600;margin-bottom:3px}
+.preview-card .pc-price{color:var(--green);font-size:.88rem}
+
+/* ── PROBLEM CARD ── */
+.problem{background:rgba(255,123,114,.07);border:1px solid rgba(255,123,114,.25);border-radius:var(--radius);padding:18px 22px;max-width:600px;width:100%}
+
+/* ── HW CARD ── */
+.hw{background:linear-gradient(135deg,rgba(97,218,251,.07),rgba(188,140,255,.07));border:1px solid rgba(97,218,251,.18);border-radius:var(--radius);padding:28px 36px;max-width:540px;width:100%;text-align:center}
+.hw h3{font-size:1.2rem;margin-bottom:8px}
+.hw p{color:var(--muted);font-size:.9rem;line-height:1.6}
+
+/* ── PROPS ANALOGY ── */
+.fn-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 28px;max-width:540px;width:100%}
+
+/* ── BADGE ── */
+.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.25);border-radius:6px;padding:5px 12px;font-size:.8rem;color:var(--green);font-weight:600}
+
+@media(max-width:700px){
+  .slide{padding:36px 20px}
+  .g3,.g2,.split,.car-grid,.two,.sumgrid{grid-template-columns:1fr;flex-direction:column}
+}
+
+#lesson-nav {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    z-index: 200;
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 6px 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.4);
+  }
+  .ln-label {
+    font-size: 11px; font-weight: 600; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted);
+    padding: 0 8px;
+  }
+  .ln-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 14px; border-radius: 16px;
+    font-size: 12px; font-weight: 600;
+    text-decoration: none; cursor: pointer;
+    border: 1px solid transparent;
+    transition: all .2s;
+    font-family: 'Inter', sans-serif;
+    white-space: nowrap;
+  }
+  .ln-btn.current {
+    background: var(--react-dim);
+    color: var(--react);
+    border-color: rgba(97,218,251,.3);
+    pointer-events: none;
+  }
+  .ln-btn.next, .ln-btn.prev {
+    color: var(--muted);
+    background: transparent;
+    border-color: var(--border);
+  }
+  .ln-btn.next:hover, .ln-btn.prev:hover {
+    color: var(--text);
+    border-color: rgba(97,218,251,.4);
+    background: rgba(97,218,251,.05);
+  }
+  .ln-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--border); flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+  <nav id="lesson-nav" aria-label="Навигация по урокам">
+    <span class="ln-label">Курс</span>
+    <div class="ln-dot"></div>
+    <a class="ln-btn prev" href="./index.html">← ⚛️ Урок 1 — React + Vite</a>
+    <div class="ln-dot"></div>
+    <span class="ln-btn current">Урок 2 — Компоненты</span>
+  </nav>
+<div id="pbar"></div>
+<span id="counter"></span>
+<button class="nav" id="prev">&#8592;</button>
+<button class="nav" id="next">&#8594;</button>
+
+<div id="deck">
+
+<!-- ═══════════════════ S1 — HERO ═══════════════════ -->
+<section class="slide active">
+  <div class="eyebrow">Неделя 1 · Урок 2</div>
+  <h1 style="text-align:center;margin-bottom:14px">
+    <span class="accent">Компоненты</span><br/>и Props
+  </h1>
+  <p style="color:var(--muted);max-width:480px;text-align:center;line-height:1.6;font-size:1.05rem;margin-bottom:22px">
+    Научимся строить интерфейс из маленьких деталей и передавать им данные
+  </p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+    <span class="pill">Компоненты</span>
+    <span class="pill">src/components/</span>
+    <span class="pill">export default</span>
+    <span class="pill">Props</span>
+    <span class="pill">Деструктуризация</span>
+    <span class="pill">~2 часа</span>
+  </div>
+</section>
+
+<!-- ═══════════════════ S2 — ПОВТОРЕНИЕ ═══════════════════ -->
+<section class="slide">
+  <div class="eyebrow">Повторение прошлого урока</div>
+  <h2 style="margin-bottom:28px">Быстрая проверка <span class="accent">5 вопросов</span></h2>
+  <ul class="clist">
+    <li><span style="color:var(--react);font-family:'JetBrains Mono',monospace;font-size:.85rem">01</span><span>Что такое <strong>React</strong> и зачем он нужен?</span></li>
+    <li><span style="color:var(--react);font-family:'JetBrains Mono',monospace;font-size:.85rem">02</span><span>Что такое <strong>JSX</strong> и чем он отличается от HTML?</span></li>
+    <li><span style="color:var(--react);font-family:'JetBrains Mono',monospace;font-size:.85rem">03</span><span>Где находится главный компонент проекта?</span></li>
+    <li><span style="color:var(--react);font-family:'JetBrains Mono',monospace;font-size:.85rem">04</span><span>Что делает файл <strong>main.jsx</strong>?</span></li>
+    <li><span style="color:var(--react);font-family:'JetBrains Mono',monospace;font-size:.85rem">05</span><span>Как называется команда для запуска проекта Vite?</span></li>
+  </ul>
+  <p style="color:var(--muted);font-size:.85rem;margin-top:22px">💡 Пусть один студент ответит — это лучше, чем если отвечает преподаватель</p>
+</section>
+
+<!-- ═══════════════════ S3 — АНАЛОГИЯ: МАШИНА ═══════════════════ -->
+<section class="slide">
+  <div class="eyebrow">Главная идея</div>
+  <h2 style="margin-bottom:10px">Из чего состоит <span class="accent">машина</span>?</h2>
+  <p style="color:var(--muted);margin-bottom:28px;font-size:.95rem">Каждая часть — отдельная деталь. React устроен точно так же.</p>
+  <div class="car-grid">
+    <div class="car-part"><div class="car-icon">🔧</div><h3 style="font-size:.9rem">Двигатель</h3><span>Engine</span></div>
+    <div class="car-part"><div class="car-icon">🚪</div><h3 style="font-size:.9rem">Двери</h3><span>Door</span></div>
+    <div class="car-part"><div class="car-icon">⚙️</div><h3 style="font-size:.9rem">Колёса</h3><span>Wheel</span></div>
+    <div class="car-part"><div class="car-icon">🎮</div><h3 style="font-size:.9rem">Руль</h3><span>Steering</span></div>
+  </div>
+  <div style="margin-top:28px;text-align:center;max-width:640px">
+    <p style="color:var(--muted);font-size:.9rem;margin-bottom:14px">В React точно так же — не одна огромная страница, а дерево компонентов:</p>
+    <div class="app-tree">
+&lt;<span class="tag">App</span>&gt;
+&nbsp;&nbsp;&lt;<span class="tag">Header</span> /&gt;
+&nbsp;&nbsp;&lt;<span class="tag">Sidebar</span> /&gt;
+&nbsp;&nbsp;&lt;<span class="tag">Content</span> /&gt;
+&nbsp;&nbsp;&lt;<span class="tag">Footer</span> /&gt;
+&lt;/<span class="tag">App</span>&gt;
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ S4 — СТРУКТУРА ПАПОК ═══════════════════ -->
+<section class="slide">
+  <div class="eyebrow">Стандарт проекта</div>
+  <h2 style="margin-bottom:26px">Папка <span class="accent">src/components/</span></h2>
+  <div class="two">
+    <div class="col">
+      <div class="tree">
+<span class="td">src/</span>
+├── <span class="td">components/</span>       ← <span style="color:var(--react)">новая папка</span>
+│&nbsp;&nbsp;&nbsp;├── <span class="thl">Button.jsx</span>
+│&nbsp;&nbsp;&nbsp;├── <span class="thl">Card.jsx</span>
+│&nbsp;&nbsp;&nbsp;└── <span class="thl">UserCard.jsx</span>
+├── <span class="tf">App.jsx</span>
+├── <span class="tf">App.css</span>
+└── <span class="tf">main.jsx</span>
+      </div>
+    </div>
+    <div class="col">
+      <ul class="clist">
+        <li><span style="color:var(--green)">✓</span><span>Каждый компонент — <strong>отдельный файл</strong></span></li>
+        <li><span style="color:var(--green)">✓</span><span>Имя файла = имя компонента (<code style="font-family:'JetBrains Mono',monospace;color:var(--yellow)">Button.jsx</code>)</span></li>
+        <li><span style="color:var(--green)">✓</span><span>Имя компонента всегда с <strong>большой буквы</strong></span></li>
+        <li><span style="color:var(--green)">✓</span><span>Все компоненты — в папке <code style="font-family:'JetBrains Mono',monospace;color:var(--react)">components/</code></span></li>
+      </ul>
+      <p style="color:var(--muted);font-size:.82rem;margin-top:14px">⚠️ Создай эту папку прямо сейчас — это стандарт, к которому нужно привыкнуть с первого дня</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ S5 — ПЕРВЫЙ КОМПОНЕНТ + EXPORT/IMPORT ═══════════════════ -->
+<section class="slide">
+  <div class="eyebrow">Шаг 1 — создаём компонент</div>
+  <h2 style="margin-bottom:22px"><span class="accent">export</span> и <span class="accent">import</span> — обязательно знать</h2>
+  <div class="split">
+    <div>
+      <p class="code-label">src/components/Button.jsx</p>
+      <div class="code">
+<span class="kw">function</span> <span class="fn">Button</span>() {
+  <span class="kw">return</span> &lt;<span class="tag">button</span>&gt;Click me&lt;/<span class="tag">button</span>&gt;
+}
+
+<span class="kw">export default</span> <span class="fn">Button</span>
+<span class="cm">// ↑ без этого компонент невидим снаружи!</span>
+      </div>
+    </div>
+    <div>
+      <p class="code-label">src/App.jsx</p>
+      <div class="code">
+<span class="kw">import</span> <span class="fn">Button</span> <span class="kw">from</span> <span class="str">'./components/Button'</span>
+<span class="cm">// ↑ путь от текущего файла</span>
+
+<span class="kw">function</span> <span class="fn">App</span>() {
+  <span class="kw">return</span> (
+    &lt;&gt;
+      &lt;<span class="tag">Button</span> /&gt;
+      &lt;<span class="tag">Button</span> /&gt;
+      &lt;<span class="tag">Button</span> /&gt;
+    &lt;/&gt;
+  )
+}
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:18px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-size:.85rem">
+      <span class="muted">Написали один раз — используем</span> <strong style="color:var(--react)">сколько угодно</strong>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-size:.85rem">
+      <span class="muted">Изменили в</span> <code style="font-family:'JetBrains Mono',monospace;color:var(--yellow)">Button.jsx</code> <span class="muted">— изменилось везде</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ S6 — ПРОБЛЕМА ОДИНАКОВЫХ КАРТОЧЕК ═══════════════════ -->
+<section class="slide">
+  <div class="eyebrow">Проблема</div>
+  <h2 style="margin-bottom:20px">Почему все карточки <span style="color:var(--red)">одинаковые</span>?</h2>
+  <div class="two" style="align-items:center">
+    <div class="col">
+      <div class="code">
+<span class="cm">// Card.jsx</span>
+<span class="kw">function</span> <span class="fn">Card</span>() {
+  <span class="kw">return</span> (
+    &lt;<span class="tag">div</span>&gt;
+      &lt;<span class="tag">h2</span>&gt;iPhone 16&lt;/<span class="tag">h2</span>&gt;
+      &lt;<span class="tag">p</span>&gt;$1200&lt;/<span class="tag">p</span>&gt;
+    &lt;/<span class="tag">div</span>&gt;
+  )
+}
+      </div>
+      <div class="code" style="margin-top:12px">
+<span class="cm">// App.jsx — результат одинаковый :(</span>
+&lt;<span class="tag">Card</span> /&gt;
+&lt;<span class="tag">Card</span> /&gt;
+&lt;<span class="tag">Card</span> /&gt;
+      </div>
+    </div>
+    <div class="col" style="display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+      <div class="preview-card"><div class="pc-name">iPhone 16</div><div class="pc-price">$1200</div></div>
+      <div class="preview-card"><div class="pc-name">iPhone 16</div><div class="pc-price">$1200</div></div>
+      <div class="preview-card"><div class="pc-name">iPhone 16</div><div class="pc-price">$1200</div></div>
+      <p style="color:var(--red);font-size:.82rem;margin-top:4px">Данные жёстко прописаны внутри 😔</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ S7 — PROPS АНАЛОГИЯ ═══════════════════ -->
+<section class="slide">
+  <div class="eyebrow">Решение</div>
+  <h2 style="margin-bottom:24px"><span class="accent">Props</span> — аргументы для компонента</h2>
+  <div class="two">
+    <div class="col">
+      <p style="color:var(--muted);font-size:.92rem;margin-bottom:14px">Сначала без React — обычный JavaScript:</p>
+      <div class="code">
+<span class="cm">// функция с аргументом</span>
+<span class="kw">function</span> <span class="fn">sayHello</span>(name) {
+  <span class="kw">return</span> <span class="str">"Привет, "</span> + name
+}
+
+<span class="fn">sayHello</span>(<span class="str">"Ali"</span>)   <span class="cm">// "Привет, Ali"</span>
+<span class="fn">sayHello</span>(<span class="str">"Sara"</span>)  <span class="cm">// "Привет, Sara"</span>
+<span class="fn">sayHello</span>(<span class="str">"John"</span>)  <span class="cm">// "Привет, John"</span>
+      </div>
+    </div>
+    <div class="col">
+      <p style="color:var(--muted);font-size:.92rem;margin-bottom:14px">В React — точно та же идея:</p>
+      <div class="fn-box">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">
+          <div style="text-align:center;flex:1">
+            <div style="font-size:.75rem;color:var(--muted);margin-bottom:6px">Вызов</div>
+            <div class="code" style="font-size:.78rem;">&lt;<span class="tag">Card</span> <span class="attr">name</span>=<span class="val">"iPhone"</span> /&gt;</div>
+          </div>
+          <div style="font-size:1.4rem;color:var(--react)">→</div>
+          <div style="text-align:center;flex:1">
+            <div style="font-size:.75rem;color:var(--muted);margin-bottom:6px">Компонент получает</div>
+            <div class="code" style="font-size:.78rem;"><span class="op">{</span> name: <span class="str">"iPhone"</span> <span class="op">}</span></div>
+          </div>
+        </div>
+        <p style="color:var(--muted);font-size:.82rem;text-align:center">Props = аргументы, только записанные как HTML-атрибуты</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ S8 — PROPS В КОДЕ ═══════════════════ -->
+<section class="slide">
+  <div class="eyebrow">Props в коде</div>
+  <h2 style="margin-bottom:22px">Передаём данные через <span class="accent">props</span></h2>
+  <div class="split">
+    <div>
+      <p class="code-label">Card.jsx — получаем props</p>
+      <div class="code">
+<span class="kw">function</span> <span class="fn">Card</span>(<span style="color:var(--orange)">props</span>) {
+  <span class="kw">return</span> (
+    &lt;<span class="tag">div</span>&gt;
+      &lt;<span class="tag">h2</span>&gt;{<span style="color:var(--orange)">props</span>.name}&lt;/<span class="tag">h2</span>&gt;
+      &lt;<span class="tag">p</span>&gt;{<span style="color:var(--orange)">props</span>.price}&lt;/<span class="tag">p</span>&gt;
+    &lt;/<span class="tag">div</span>&gt;
+  )
+}
+      </div>
+    </div>
+    <div>
+      <p class="code-label">App.jsx — передаём разные данные</p>
+      <div class="code">
+&lt;<span class="tag">Card</span>
+  <span class="attr">name</span>=<span class="val">"iPhone 16"</span>
+  <span class="attr">price</span>=<span class="val">"$1200"</span>
+/&gt;
+&lt;<span class="tag">Card</span>
+  <span class="attr">name</span>=<span class="val">"Samsung S24"</span>
+  <span class="attr">price</span>=<span class="val">"$900"</span>
+/&gt;
+&lt;<span class="tag">Card</span>
+  <span class="attr">name</span>=<span class="val">"MacBook"</span>
+  <span class="attr">price</span>=<span class="val">"$2500"</span>
+/&gt;
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+    <div class="preview-card"><div class="pc-name">iPhone 16</div><div class="pc-price">$1200</div></div>
+    <div class="preview-card"><div class="pc-name">Samsung S24</div><div class="pc-price">$900</div></div>
+    <div class="preview-card"><div class="pc-name">MacBook</div><div class="pc-price">$2500</div></div>
+  </div>
+</section>
+
+<!-- ═══════════════════ S9 — ДЕСТРУКТУРИЗАЦИЯ ═══════════════════ -->
+<section class="slide">
+  <div class="eyebrow">Улучшаем код</div>
+  <h2 style="margin-bottom:8px">Деструктуризация <span class="accent">props</span></h2>
+  <p style="color:var(--muted);margin-bottom:22px;font-size:.92rem">Это обычный JavaScript — React здесь вообще ни при чём</p>
+  <div class="split">
+    <div>
+      <p class="code-label">❌ Было (многословно)</p>
+      <div class="code">
+<span class="kw">function</span> <span class="fn">Card</span>(<span style="color:var(--orange)">props</span>) {
+  <span class="kw">return</span> (
+    &lt;<span class="tag">div</span>&gt;
+      &lt;<span class="tag">h2</span>&gt;{<span style="color:var(--orange)">props</span>.name}&lt;/<span class="tag">h2</span>&gt;
+      &lt;<span class="tag">p</span>&gt;{<span style="color:var(--orange)">props</span>.price}&lt;/<span class="tag">p</span>&gt;
+    &lt;/<span class="tag">div</span>&gt;
+  )
+}
+      </div>
+    </div>
+    <div>
+      <p class="code-label">✅ Стало (чисто)</p>
+      <div class="code">
+<span class="kw">function</span> <span class="fn">Card</span>({ <span style="color:var(--orange)">name</span>, <span style="color:var(--orange)">price</span> }) {
+  <span class="kw">return</span> (
+    &lt;<span class="tag">div</span>&gt;
+      &lt;<span class="tag">h2</span>&gt;{<span style="color:var(--orange)">name</span>}&lt;/<span class="tag">h2</span>&gt;
+      &lt;<span class="tag">p</span>&gt;{<span style="color:var(--orange)">price</span>}&lt;/<span class="tag">p</span>&gt;
+    &lt;/<span class="tag">div</span>&gt;
+  )
+}
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 20px;max-width:600px;font-size:.88rem">
+    <strong style="color:var(--text)">Как это работает:</strong>
+    <span class="muted"> функция получает объект</span>
+    <code style="font-family:'JetBrains Mono',monospace;color:var(--yellow)"> { name, price }</code>
+    <span class="muted"> и сразу распаковывает его в переменные</span>
+  </div>
+</section>
+
+<!-- ═══════════════════ S10 — ПРАКТИКА UserCard ═══════════════════ -->
+<section class="slide">
+  <div class="eyebrow">Практика 1 — 20 минут</div>
+  <h2 style="margin-bottom:22px">Компонент <span class="accent">UserCard</span></h2>
+  <div class="two">
+    <div class="col">
+      <p class="code-label">Что нужно сделать:</p>
+      <div class="code">
+<span class="cm">// components/UserCard.jsx</span>
+<span class="kw">function</span> <span class="fn">UserCard</span>({ name, age, job }) {
+  <span class="kw">return</span> (
+    &lt;<span class="tag">div</span> <span class="attr">className</span>=<span class="val">"user-card"</span>&gt;
+      &lt;<span class="tag">h2</span>&gt;{name}&lt;/<span class="tag">h2</span>&gt;
+      &lt;<span class="tag">p</span>&gt;Возраст: {age}&lt;/<span class="tag">p</span>&gt;
+      &lt;<span class="tag">p</span>&gt;{job}&lt;/<span class="tag">p</span>&gt;
+    &lt;/<span class="tag">div</span>&gt;
+  )
+}
+<span class="kw">export default</span> <span class="fn">UserCard</span>
+      </div>
+    </div>
+    <div class="col">
+      <p class="code-label">Как использовать в App.jsx:</p>
+      <div class="code">
+&lt;<span class="tag">UserCard</span>
+  <span class="attr">name</span>=<span class="val">"Ali"</span>
+  <span class="attr">age</span>={22}
+  <span class="attr">job</span>=<span class="val">"Frontend"</span>
+/&gt;
+&lt;<span class="tag">UserCard</span>
+  <span class="attr">name</span>=<span class="val">"Sara"</span>
+  <span class="attr">age</span>={19}
+  <span class="attr">job</span>=<span class="val">"Backend"</span>
+/&gt;
+&lt;<span class="tag">UserCard</span>
+  <span class="attr">name</span>=<span class="val">"John"</span>
+  <span class="attr">age</span>={30}
+  <span class="attr">job</span>=<span class="val">"Designer"</span>
+/&gt;
+      </div>
+      <p style="color:var(--muted);font-size:.8rem;margin-top:12px">⚠️ Числа передаются в <code style="font-family:'JetBrains Mono',monospace;color:var(--yellow)">{}</code>, строки — в <code style="font-family:'JetBrains Mono',monospace;color:var(--green)">" "</code></p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ S11 — ПРАКТИКА ProductCard ═══════════════════ -->
+<section class="slide">
+  <div class="eyebrow">Практика 2 — 20 минут</div>
+  <h2 style="margin-bottom:22px">Компонент <span class="accent">ProductCard</span></h2>
+  <div class="two">
+    <div class="col">
+      <div class="code">
+<span class="kw">function</span> <span class="fn">ProductCard</span>({ title, price, image }) {
+  <span class="kw">return</span> (
+    &lt;<span class="tag">div</span> <span class="attr">className</span>=<span class="val">"product-card"</span>&gt;
+      &lt;<span class="tag">img</span>
+        <span class="attr">src</span>={image}
+        <span class="attr">alt</span>={title}
+        <span class="attr">width</span>=<span class="val">"200"</span>
+      /&gt;
+      &lt;<span class="tag">h3</span>&gt;{title}&lt;/<span class="tag">h3</span>&gt;
+      &lt;<span class="tag">p</span>&gt;{price}&lt;/<span class="tag">p</span>&gt;
+    &lt;/<span class="tag">div</span>&gt;
+  )
+}
+<span class="kw">export default</span> <span class="fn">ProductCard</span>
+      </div>
+    </div>
+    <div class="col">
+      <p style="color:var(--muted);font-size:.85rem;margin-bottom:10px">Для картинок используй <strong style="color:var(--react)">picsum.photos</strong> — бесплатные заглушки:</p>
+      <div class="code" style="font-size:.75rem;">
+<span class="cm">// Картинка 300×200 пикселей</span>
+https://picsum.photos/300/200
+
+<span class="cm">// Конкретная картинка по ID</span>
+https://picsum.photos/id/10/300/200
+
+<span class="cm">// Использование:</span>
+&lt;<span class="tag">ProductCard</span>
+  <span class="attr">title</span>=<span class="val">"MacBook"</span>
+  <span class="attr">price</span>=<span class="val">"$2500"</span>
+  <span class="attr">image</span>=<span class="val">"https://picsum.photos/300/200"</span>
+/&gt;
+      </div>
+      <p style="color:var(--muted);font-size:.78rem;margin-top:10px">Не тратьте время на поиск картинок — picsum даёт случайное фото по ссылке</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ S12 — ДОМАШКА ═══════════════════ -->
+<section class="slide">
+  <div class="eyebrow">Домашнее задание</div>
+  <h2 style="margin-bottom:26px">Мини-<span class="accent">магазин</span></h2>
+  <div class="hw">
+    <div style="font-size:2.2rem;margin-bottom:12px">🛍️</div>
+    <h3>Каталог из 6+ товаров</h3>
+    <p>Создай компонент ProductCard и выведи минимум 6 карточек. Каждая карточка получает данные через Props. Добавь CSS-стили — карточки должны выглядеть опрятно.</p>
+  </div>
+  <div style="margin-top:22px;max-width:540px;width:100%">
+    <p style="color:var(--muted);font-size:.8rem;margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em">Бонус</p>
+    <div style="display:flex;gap:9px;flex-wrap:wrap">
+      <span class="pill pill-g">Разные категории товаров</span>
+      <span class="pill pill-g">Header с названием магазина</span>
+      <span class="pill pill-g">Красивые стили</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ S13 — ИТОГИ ═══════════════════ -->
+<section class="slide">
+  <div class="eyebrow">Итоги урока</div>
+  <h2 style="margin-bottom:26px">Что ты теперь <span class="accent">умеешь</span></h2>
+  <div class="sumgrid">
+    <div class="sumitem"><span class="tick">✅</span>Объяснить зачем нужны компоненты</div>
+    <div class="sumitem"><span class="tick">✅</span>Создать папку src/components/</div>
+    <div class="sumitem"><span class="tick">✅</span>Написать компонент в отдельном файле</div>
+    <div class="sumitem"><span class="tick">✅</span>Использовать export default и import</div>
+    <div class="sumitem"><span class="tick">✅</span>Передать данные через Props</div>
+    <div class="sumitem"><span class="tick">✅</span>Деструктурировать Props</div>
+    <div class="sumitem"><span class="tick">✅</span>Использовать один компонент многократно</div>
+    <div class="sumitem"><span class="tick">✅</span>Собрать мини-каталог из карточек</div>
+  </div>
+  <p style="color:var(--muted);margin-top:24px;font-size:.9rem;text-align:center">
+    Следующий урок → <strong style="color:var(--text)">State — делаем интерфейс живым</strong> <span class="pill" style="margin-left:8px">useState</span>
+  </p>
+</section>
+
+</div>
+
+<script>
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total = slides.length;
+let cur = 0;
+
+const bar = document.getElementById('pbar');
+const counter = document.getElementById('counter');
+const btnP = document.getElementById('prev');
+const btnN = document.getElementById('next');
+
+function go(n) {
+  slides[cur].classList.remove('active');
+  cur = Math.max(0, Math.min(total - 1, n));
+  slides[cur].classList.add('active');
+  bar.style.width = ((cur + 1) / total * 100) + '%';
+  counter.textContent = (cur + 1) + ' / ' + total;
+  btnP.style.opacity = cur === 0 ? '.25' : '1';
+  btnN.style.opacity = cur === total - 1 ? '.25' : '1';
+}
+
+btnP.addEventListener('click', () => go(cur - 1));
+btnN.addEventListener('click', () => go(cur + 1));
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') go(cur + 1);
+  if (e.key === 'ArrowLeft') go(cur - 1);
+});
+
+let tx = 0;
+document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - tx;
+  if (dx < -50) go(cur + 1);
+  if (dx > 50) go(cur - 1);
+});
+
+go(0);
+</script>
+</body>
+</html>
